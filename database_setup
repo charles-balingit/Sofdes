@@ -1,0 +1,50 @@
+import sqlite3
+
+conn = sqlite3.connect("toyota_dss.db")
+cursor = conn.cursor()
+
+# Login / EV owner data
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    email TEXT UNIQUE,
+    password TEXT,
+    vehicle_model TEXT,
+    battery_health INTEGER
+)
+""")
+
+# EV Charging Stations
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS ev_stations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    station_name TEXT,
+    latitude REAL,
+    longitude REAL
+)
+""")
+
+# Toyota Sales Data
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS sales (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    year INTEGER,
+    sales INTEGER
+)
+""")
+
+# EV Parts Supply and Demand
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS parts_procurement (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    part_name TEXT,
+    supply INTEGER,
+    demand INTEGER
+)
+""")
+
+conn.commit()
+conn.close()
+
+print("Database Created Successfully")
