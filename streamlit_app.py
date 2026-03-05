@@ -16,8 +16,7 @@ if "page" not in st.session_state:
 
 def login_page():
 
-    st.title("Toyota EV Decision Support System")
-    st.subheader("EV Owner Login")
+    st.title("Toyota Decision Support System")
 
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
