@@ -1,1 +1,6 @@
 streamlit
+sqlite3
+pandas
+plotly
+folium
+streamlit-folium
