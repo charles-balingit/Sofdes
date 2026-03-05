@@ -5,24 +5,28 @@ import plotly.express as px
 import folium
 from streamlit_folium import st_folium
 
+# ---------------- DATABASE ---------------- #
+
 conn = sqlite3.connect("toyota_dss.db", check_same_thread=False)
 cursor = conn.cursor()
 
-st.title("Toyota Decision Support System")
+# ---------------- SESSION ---------------- #
 
-menu = st.sidebar.selectbox(
-"Navigation",
-["Login","Quick Access","EV Smart Routing","Sales Forecasting","Parts Procurement"]
-)
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
 
-# ---------------- LOGIN ---------------- #
+if "page" not in st.session_state:
+    st.session_state.page = "login"
 
-if menu == "Login":
+# ---------------- LOGIN PAGE ---------------- #
 
+def login_page():
+
+    st.title("Toyota EV Decision Support System")
     st.subheader("EV Owner Login")
 
     email = st.text_input("Email")
-    password = st.text_input("Password",type="password")
+    password = st.text_input("Password", type="password")
 
     if st.button("Login"):
 
@@ -33,46 +37,69 @@ if menu == "Login":
         user = cursor.fetchone()
 
         if user:
+
+            st.session_state.logged_in = True
+            st.session_state.page = "home"
             st.success("Login Successful")
+            st.rerun()
+
         else:
-            st.error("Invalid Credentials")
+            st.error("❌ Email and Password do not match")
 
+# ---------------- HOME PAGE ---------------- #
 
-# ---------------- QUICK ACCESS ---------------- #
+def home_page():
 
-elif menu == "Quick Access":
+    st.title("Toyota DSS Dashboard")
 
-    st.subheader("System Overview")
+    st.write("Overview of System Features")
 
     col1,col2,col3 = st.columns(3)
 
     with col1:
-        st.info("EV Smart Routing")
-        st.write("Locate nearest charging stations based on battery health")
+        st.subheader("EV Smart Routing")
+        st.write("Locate charging stations and find best route.")
+
+        if st.button("Open EV Routing"):
+            st.session_state.page = "ev_routing"
+            st.rerun()
 
     with col2:
-        st.success("Sales Forecasting")
-        st.write("Visualize Toyota global sales trends")
+        st.subheader("Sales Forecasting")
+        st.write("View Toyota sales trends for the past 5 years.")
+
+        if st.button("Open Sales Forecast"):
+            st.session_state.page = "sales"
+            st.rerun()
 
     with col3:
-        st.warning("Parts Procurement")
-        st.write("Analyze EV supply vs demand")
+        st.subheader("Parts Procurement")
+        st.write("Analyze supply and demand of EV parts.")
 
+        if st.button("Open Parts Procurement"):
+            st.session_state.page = "parts"
+            st.rerun()
 
-# ---------------- EV SMART ROUTING ---------------- #
+# ---------------- EV ROUTING PAGE ---------------- #
 
-elif menu == "EV Smart Routing":
+def ev_routing_page():
 
-    st.subheader("EV Charging Stations Map")
+    st.title("EV Smart Routing")
 
-    battery = st.slider("Battery Health %",0,100,50)
+    st.subheader("Battery Status")
+
+    battery = st.slider("Battery Level (%)",0,100,50)
+
+    st.write("Battery Level:",battery,"%")
+
+    st.subheader("Nearby Charging Stations")
 
     cursor.execute("SELECT * FROM ev_stations")
-    data = cursor.fetchall()
+    stations = cursor.fetchall()
 
     map = folium.Map(location=[14.5995,120.9842], zoom_start=12)
 
-    for station in data:
+    for station in stations:
         folium.Marker(
             [station[2],station[3]],
             popup=station[1],
@@ -81,35 +108,78 @@ elif menu == "EV Smart Routing":
 
     st_folium(map,width=700)
 
+    st.subheader("Best Charging Suggestion")
 
-# ---------------- SALES FORECASTING ---------------- #
+    if battery < 30:
+        st.warning("⚠ Battery Low. Recommended to go to nearest charging station immediately.")
+    elif battery < 60:
+        st.info("Battery is moderate. Plan charging soon.")
+    else:
+        st.success("Battery level is good.")
 
-elif menu == "Sales Forecasting":
+    if st.button("⬅ Back to Home"):
+        st.session_state.page = "home"
+        st.rerun()
 
-    st.subheader("Toyota Sales Forecast")
+# ---------------- SALES FORECAST PAGE ---------------- #
 
-    df = pd.read_sql_query("SELECT * FROM sales",conn)
+def sales_page():
 
-    fig = px.line(df,x="year",y="sales",
-    title="Toyota Global Sales")
+    st.title("Toyota Sales Forecasting")
+
+    df = pd.read_sql_query("SELECT * FROM sales", conn)
+
+    fig = px.line(
+        df,
+        x="year",
+        y="sales",
+        markers=True,
+        title="Toyota Sales in the Last 5 Years"
+    )
 
     st.plotly_chart(fig)
 
+    if st.button("⬅ Back to Home"):
+        st.session_state.page = "home"
+        st.rerun()
 
-# ---------------- PARTS PROCUREMENT ---------------- #
+# ---------------- PARTS PROCUREMENT PAGE ---------------- #
 
-elif menu == "Parts Procurement":
+def parts_page():
 
-    st.subheader("EV Parts Supply vs Demand")
+    st.title("EV Parts Procurement")
 
-    df = pd.read_sql_query("SELECT * FROM parts_procurement",conn)
+    df = pd.read_sql_query("SELECT * FROM parts_procurement", conn)
 
     fig = px.bar(
         df,
         x="part_name",
         y=["supply","demand"],
         barmode="group",
-        title="EV Parts Supply vs Demand"
+        title="Supply vs Demand of EV Parts"
     )
 
     st.plotly_chart(fig)
+
+    if st.button("⬅ Back to Home"):
+        st.session_state.page = "home"
+        st.rerun()
+
+# ---------------- PAGE CONTROLLER ---------------- #
+
+if not st.session_state.logged_in:
+    login_page()
+
+else:
+
+    if st.session_state.page == "home":
+        home_page()
+
+    elif st.session_state.page == "ev_routing":
+        ev_routing_page()
+
+    elif st.session_state.page == "sales":
+        sales_page()
+
+    elif st.session_state.page == "parts":
+        parts_page()
