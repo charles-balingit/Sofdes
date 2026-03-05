@@ -44,30 +44,19 @@ def home_page():
 
     st.title("Toyota DSS Dashboard")
 
-    st.write("Overview of the three main system features")
-
     col1, col2, col3 = st.columns(3)
-
+        
     with col1:
-        st.subheader("EV Smart Routing")
-        st.write("Find nearby EV charging stations and best route.")
-
         if st.button("Go to EV Smart Routing"):
             st.session_state.page = "ev"
             st.rerun()
 
     with col2:
-        st.subheader("Sales Forecasting")
-        st.write("View Toyota sales for the past 5 years.")
-
         if st.button("Go to Sales Forecasting"):
             st.session_state.page = "sales"
             st.rerun()
 
     with col3:
-        st.subheader("Parts Procurement")
-        st.write("Analyze EV parts supply and demand.")
-
         if st.button("Go to Parts Procurement"):
             st.session_state.page = "parts"
             st.rerun()
