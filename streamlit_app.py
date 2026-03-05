@@ -129,7 +129,7 @@ def sales_page():
         x="Year",
         y="Sales",
         markers=True,
-        title="Toyota Global Sales (5 Years)"
+        title="Toyota Sales (5 Years)"
     )
 
     st.plotly_chart(fig)
