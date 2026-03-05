@@ -1,14 +1,8 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
 import plotly.express as px
 import folium
 from streamlit_folium import st_folium
-
-# ---------------- DATABASE ---------------- #
-
-conn = sqlite3.connect("toyota_dss.db", check_same_thread=False)
-cursor = conn.cursor()
 
 # ---------------- SESSION ---------------- #
 
@@ -28,15 +22,13 @@ def login_page():
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
 
+    # Sample account for testing
+    correct_email = "owner@toyota.com"
+    correct_password = "12345"
+
     if st.button("Login"):
 
-        cursor.execute(
-        "SELECT * FROM users WHERE email=? AND password=?",
-        (email,password))
-
-        user = cursor.fetchone()
-
-        if user:
+        if email == correct_email and password == correct_password:
 
             st.session_state.logged_in = True
             st.session_state.page = "home"
@@ -46,124 +38,153 @@ def login_page():
         else:
             st.error("❌ Email and Password do not match")
 
+
 # ---------------- HOME PAGE ---------------- #
 
 def home_page():
 
     st.title("Toyota DSS Dashboard")
 
-    st.write("Overview of System Features")
+    st.write("Overview of the three main system features")
 
-    col1,col2,col3 = st.columns(3)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         st.subheader("EV Smart Routing")
-        st.write("Locate charging stations and find best route.")
+        st.write("Find nearby EV charging stations and best route.")
 
-        if st.button("Open EV Routing"):
-            st.session_state.page = "ev_routing"
+        if st.button("Go to EV Smart Routing"):
+            st.session_state.page = "ev"
             st.rerun()
 
     with col2:
         st.subheader("Sales Forecasting")
-        st.write("View Toyota sales trends for the past 5 years.")
+        st.write("View Toyota sales for the past 5 years.")
 
-        if st.button("Open Sales Forecast"):
+        if st.button("Go to Sales Forecasting"):
             st.session_state.page = "sales"
             st.rerun()
 
     with col3:
         st.subheader("Parts Procurement")
-        st.write("Analyze supply and demand of EV parts.")
+        st.write("Analyze EV parts supply and demand.")
 
-        if st.button("Open Parts Procurement"):
+        if st.button("Go to Parts Procurement"):
             st.session_state.page = "parts"
             st.rerun()
 
+
 # ---------------- EV ROUTING PAGE ---------------- #
 
-def ev_routing_page():
+def ev_page():
 
     st.title("EV Smart Routing")
 
     st.subheader("Battery Status")
 
-    battery = st.slider("Battery Level (%)",0,100,50)
+    battery = st.slider("Battery Level (%)", 0, 100, 50)
 
-    st.write("Battery Level:",battery,"%")
+    st.write("Current Battery:", battery, "%")
 
     st.subheader("Nearby Charging Stations")
 
-    cursor.execute("SELECT * FROM ev_stations")
-    stations = cursor.fetchall()
+    # Sample station data
+    stations = [
+        ("Pasig Charging Station", 14.5764, 121.0851),
+        ("Makati EV Hub", 14.5547, 121.0244),
+        ("Quezon City Station", 14.6760, 121.0437)
+    ]
 
-    map = folium.Map(location=[14.5995,120.9842], zoom_start=12)
+    m = folium.Map(location=[14.5995, 120.9842], zoom_start=12)
 
     for station in stations:
         folium.Marker(
-            [station[2],station[3]],
-            popup=station[1],
+            [station[1], station[2]],
+            popup=station[0],
             icon=folium.Icon(color="green")
-        ).add_to(map)
+        ).add_to(m)
 
-    st_folium(map,width=700)
+    st_folium(m, width=700)
 
-    st.subheader("Best Charging Suggestion")
+    st.subheader("Charging Recommendation")
 
     if battery < 30:
-        st.warning("⚠ Battery Low. Recommended to go to nearest charging station immediately.")
+        st.warning("Battery is low. Recommended to go to the nearest charging station.")
+
     elif battery < 60:
-        st.info("Battery is moderate. Plan charging soon.")
+        st.info("Battery level is moderate. Plan charging soon.")
+
     else:
         st.success("Battery level is good.")
 
-    if st.button("⬅ Back to Home"):
+    if st.button("Back to Home"):
         st.session_state.page = "home"
         st.rerun()
 
-# ---------------- SALES FORECAST PAGE ---------------- #
+
+# ---------------- SALES PAGE ---------------- #
 
 def sales_page():
 
     st.title("Toyota Sales Forecasting")
 
-    df = pd.read_sql_query("SELECT * FROM sales", conn)
+    # Sample 5 year sales data
+    data = {
+        "Year": [2020, 2021, 2022, 2023, 2024],
+        "Sales": [9500000, 10400000, 10500000, 11200000, 11500000]
+    }
+
+    df = pd.DataFrame(data)
 
     fig = px.line(
         df,
-        x="year",
-        y="sales",
+        x="Year",
+        y="Sales",
         markers=True,
-        title="Toyota Sales in the Last 5 Years"
+        title="Toyota Global Sales (5 Years)"
     )
 
     st.plotly_chart(fig)
 
-    if st.button("⬅ Back to Home"):
+    if st.button("Back to Home"):
         st.session_state.page = "home"
         st.rerun()
 
-# ---------------- PARTS PROCUREMENT PAGE ---------------- #
+
+# ---------------- PARTS PAGE ---------------- #
 
 def parts_page():
 
     st.title("EV Parts Procurement")
 
-    df = pd.read_sql_query("SELECT * FROM parts_procurement", conn)
+    # Sample supply and demand
+    data = {
+        "Part": [
+            "EV Battery Pack",
+            "Electric Motor",
+            "Charging Module",
+            "Power Control Unit"
+        ],
+        "Supply": [500, 300, 200, 150],
+        "Demand": [650, 280, 320, 200]
+    }
+
+    df = pd.DataFrame(data)
 
     fig = px.bar(
         df,
-        x="part_name",
-        y=["supply","demand"],
+        x="Part",
+        y=["Supply", "Demand"],
         barmode="group",
-        title="Supply vs Demand of EV Parts"
+        title="EV Parts Supply vs Demand"
     )
 
     st.plotly_chart(fig)
 
-    if st.button("⬅ Back to Home"):
+    if st.button("Back to Home"):
         st.session_state.page = "home"
         st.rerun()
+
 
 # ---------------- PAGE CONTROLLER ---------------- #
 
@@ -175,8 +196,8 @@ else:
     if st.session_state.page == "home":
         home_page()
 
-    elif st.session_state.page == "ev_routing":
-        ev_routing_page()
+    elif st.session_state.page == "ev":
+        ev_page()
 
     elif st.session_state.page == "sales":
         sales_page()
